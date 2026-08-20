@@ -6,6 +6,7 @@ import {
   MAX_DISPLAY_NAME_LENGTH,
   MAX_LOCATION_LENGTH,
   MAX_MEDIA_PER_POST,
+  MAX_MESSAGE_LENGTH,
   MAX_PAGE_SIZE,
   MAX_PASSWORD_LENGTH,
   MAX_POST_LENGTH,
@@ -139,6 +140,18 @@ export const notificationsQuerySchema = paginationSchema.extend({
     .optional(),
 })
 
+export const startConversationSchema = z.object({
+  username: usernameSchema,
+})
+
+export const sendMessageSchema = z.object({
+  content: z
+    .string()
+    .trim()
+    .min(1, "Write a message first")
+    .max(MAX_MESSAGE_LENGTH, `Messages are limited to ${MAX_MESSAGE_LENGTH} characters`),
+})
+
 export const uploadUrlSchema = z.object({
   fileName: z.string().trim().min(1).max(255),
   mimeType: z.string().trim().min(3).max(128),
@@ -157,4 +170,6 @@ export type CreatePostInput = z.input<typeof createPostSchema>
 export type PaginationInput = z.infer<typeof paginationSchema>
 export type FeedQueryInput = z.infer<typeof feedQuerySchema>
 export type SearchQueryInput = z.infer<typeof searchQuerySchema>
+export type StartConversationInput = z.infer<typeof startConversationSchema>
+export type SendMessageInput = z.infer<typeof sendMessageSchema>
 export type UploadUrlInput = z.infer<typeof uploadUrlSchema>

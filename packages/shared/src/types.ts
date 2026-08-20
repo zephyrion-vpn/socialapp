@@ -82,6 +82,37 @@ export interface NotificationItem {
   post: Post | null
 }
 
+/** A one to one direct message thread, seen from the current viewer. */
+export interface Conversation {
+  id: string
+  /** The other side of the conversation. */
+  participant: PublicUser
+  lastMessageAt: ISODateString | null
+  lastMessagePreview: string | null
+  lastMessageFromMe: boolean
+  messageCount: number
+  unreadCount: number
+  isMuted: boolean
+  createdAt: ISODateString
+}
+
+export interface DirectMessage {
+  id: string
+  conversationId: string
+  content: string
+  createdAt: ISODateString
+  isMine: boolean
+  isDeleted: boolean
+  readAt: ISODateString | null
+  sender: PublicUser
+}
+
+/** Details attached to a 429 raised by the direct message limits. */
+export interface MessageLimitDetails {
+  reason: "burst" | "sender" | "unanswered" | "new_conversations" | "duplicate"
+  retryAfterSeconds: number
+}
+
 export interface Trend {
   rank: number
   tag: string
