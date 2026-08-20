@@ -3,6 +3,7 @@ import { useState } from "react"
 
 import { api } from "@/api/client"
 import { Page, Topbar } from "@/components/AppShell"
+import { Icon } from "@/components/Icon"
 import { PostList } from "@/components/PostList"
 import { useAsync } from "@/hooks/useAsync"
 import { usePaginated } from "@/hooks/usePaginated"
@@ -30,7 +31,7 @@ export function ExploreRoute() {
               if (query.trim()) navigate(routes.search(query.trim()))
             }}
           >
-            <span>{"\uD83D\uDD0D"}</span>
+            <Icon name="search" size={17} />
             <input
               value={query}
               placeholder="Search posts and people"
@@ -63,7 +64,7 @@ export function ExploreRoute() {
         <div className="card__title">Popular right now</div>
         <PostList
           result={popular}
-          emptyIcon={"\uD83D\uDD0D"}
+          emptyIcon={<Icon name="compass" size={26} />}
           emptyTitle="No popular posts yet"
           emptyBody="Popularity is computed from likes, reposts and replies in the last 48 hours."
         />
