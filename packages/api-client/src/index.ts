@@ -5,9 +5,12 @@ import {
   type AuthResult,
   type AuthTokens,
   type ChangePasswordInput,
+  type Conversation,
   type CreatePostInput,
+  type DirectMessage,
   type FeedType,
   type HealthStatus,
+  type MessageLimitDetails,
   type NotificationItem,
   type Page,
   type Post,
@@ -52,6 +55,16 @@ export class ApiError extends Error {
 
   get isRateLimited(): boolean {
     return this.status === 429
+  }
+
+  /**
+   * Seconds to wait before retrying, when the server said so. Direct message
+   * limits always include it, so the UI can show "try again in 4s" instead of a
+   * generic error.
+   */
+  get retryAfterSeconds(): number | null {
+    const details = this.details as Partial<MessageLimitDetails> | undefined
+    return typeof details?.retryAfterSeconds === "number" ? details.retryAfterSeconds : null
   }
 
   /** Field level validation messages, if the server returned any. */
@@ -472,6 +485,45 @@ export class ApiClient {
       this.request("/bookmarks", { query }),
   }
 
+  // ---------------------------------------------------------------- messages
+
+  readonly messages = {
+    /** Inbox, newest activity first. Threads without messages are excluded. */
+    conversations: (query: { cursor?: string; limit?: number } = {}): Promise<Page<Conversation>> =>
+      this.request("/messages/conversations", { query }),
+
+    /** Opens the thread with a user, or returns the existing one. */
+    start: (username: string): Promise<{ conversation: Conversation }> =>
+      this.request("/messages/conversations", { method: "POST", body: { username } }),
+
+    conversation: (id: string): Promise<{ conversation: Conversation }> =>
+      this.request(`/messages/conversations/${id}`),
+
+    /** Newest first, like every other timeline - the UI reverses the page. */
+    list: (
+      conversationId: string,
+      query: { cursor?: string; limit?: number } = {},
+    ): Promise<Page<DirectMessage>> =>
+      this.request(`/messages/conversations/${conversationId}/messages`, { query }),
+
+    send: (
+      conversationId: string,
+      content: string,
+    ): Promise<{ message: DirectMessage; conversation: Conversation }> =>
+      this.request(`/messages/conversations/${conversationId}/messages`, {
+        method: "POST",
+        body: { content },
+      }),
+
+    markRead: (conversationId: string): Promise<{ unreadCount: number }> =>
+      this.request(`/messages/conversations/${conversationId}/read`, { method: "POST" }),
+
+    remove: (messageId: string): Promise<void> =>
+      this.request(`/messages/${messageId}`, { method: "DELETE" }),
+
+    unreadCount: (): Promise<{ count: number }> => this.request("/messages/unread-count"),
+  }
+
   // ------------------------------------------------------------------- media
 
   readonly media = {
@@ -515,7 +567,10 @@ export { API_PREFIX, ERROR_CODES }
 export type {
   AuthResult,
   AuthTokens,
+  Conversation,
+  DirectMessage,
   HealthStatus,
+  MessageLimitDetails,
   NotificationItem,
   Page,
   Post,
