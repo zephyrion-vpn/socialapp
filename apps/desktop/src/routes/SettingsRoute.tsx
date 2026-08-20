@@ -228,7 +228,9 @@ export function SettingsRoute() {
                     <div className="grow">
                       <div className="truncate">{session.userAgent ?? "Unknown device"}</div>
                       <div className="muted">
-                        {`last used ${new Date(session.lastUsedAt).toLocaleString()}`}
+                        {session.lastUsedAt
+                          ? `last used ${new Date(session.lastUsedAt).toLocaleString()}`
+                          : `created ${new Date(session.createdAt).toLocaleString()}`}
                       </div>
                     </div>
                     {session.current ? <span className="pill">this device</span> : null}
