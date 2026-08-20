@@ -5,7 +5,11 @@ import { App } from "./App"
 import { RouterProvider } from "./router"
 import { SessionProvider } from "./store/session"
 import { UiProvider } from "./store/ui"
+// Order matters: global.css defines the base, the two files after it refine the
+// shell geometry (scroll containers, icon sizing) and add the messaging UI.
 import "./styles/global.css"
+import "./styles/shell.css"
+import "./styles/messages.css"
 
 const container = document.getElementById("root")
 if (!container) throw new Error("Root container is missing")

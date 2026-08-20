@@ -4,20 +4,22 @@ import { useEffect, useRef } from "react"
 import { api } from "@/api/client"
 import { Page, Topbar } from "@/components/AppShell"
 import { Avatar } from "@/components/Avatar"
+import { Icon, type IconName } from "@/components/Icon"
 import { UserRowSkeleton } from "@/components/Skeletons"
 import { EmptyState, ErrorState } from "@/components/States"
 import { usePaginated } from "@/hooks/usePaginated"
 import { routes, useRouter } from "@/router"
 import { useUi } from "@/store/ui"
 
-const COPY: Record<string, { icon: string; text: string }> = {
-  LIKE: { icon: "\u2764\uFE0F", text: "liked your post" },
-  REPLY: { icon: "\uD83D\uDCAC", text: "replied to your post" },
-  REPOST: { icon: "\uD83D\uDD01", text: "reposted your post" },
-  FOLLOW: { icon: "\uD83D\uDC64", text: "started following you" },
-  MENTION: { icon: "\uD83D\uDCE3", text: "mentioned you" },
-  QUOTE: { icon: "\uD83D\uDCCE", text: "quoted your post" },
-  SYSTEM: { icon: "\u2699\uFE0F", text: "System notification" },
+/** Icon + colour per notification type, so the list is scannable at a glance. */
+const COPY: Record<string, { icon: IconName; text: string; color: string }> = {
+  LIKE: { icon: "heart-filled", text: "liked your post", color: "var(--like)" },
+  REPLY: { icon: "reply", text: "replied to your post", color: "var(--accent)" },
+  REPOST: { icon: "repeat", text: "reposted your post", color: "var(--repost)" },
+  FOLLOW: { icon: "user", text: "started following you", color: "var(--accent)" },
+  MENTION: { icon: "megaphone", text: "mentioned you", color: "var(--bookmark)" },
+  QUOTE: { icon: "quote", text: "quoted your post", color: "var(--accent)" },
+  SYSTEM: { icon: "info", text: "System notification", color: "var(--text-muted)" },
 }
 
 export function NotificationsRoute({ onSeen }: { onSeen: () => void }) {
@@ -61,6 +63,7 @@ export function NotificationsRoute({ onSeen }: { onSeen: () => void }) {
             data-size="sm"
             onClick={() => void markAllRead()}
           >
+            <Icon name="check" size={15} />
             Mark all read
           </button>
         }
@@ -77,7 +80,7 @@ export function NotificationsRoute({ onSeen }: { onSeen: () => void }) {
           <ErrorState error={list.error} onRetry={() => void list.refresh()} />
         ) : list.items.length === 0 ? (
           <EmptyState
-            icon={"\uD83D\uDD14"}
+            icon={<Icon name="bell" size={26} />}
             title="No notifications yet"
             body="Likes, replies, reposts and new followers will show up here."
           />
@@ -107,7 +110,9 @@ export function NotificationsRoute({ onSeen }: { onSeen: () => void }) {
                     else if (actor) navigate(routes.profile(actor.username))
                   }}
                 >
-                  <div style={{ fontSize: 18 }}>{copy.icon}</div>
+                  <div style={{ display: "grid", placeItems: "center", width: 28, height: 28 }}>
+                    <Icon name={copy.icon} size={18} style={{ color: copy.color }} />
+                  </div>
                   {actor ? <Avatar user={actor} /> : <div />}
                   <div style={{ minWidth: 0 }}>
                     <div>

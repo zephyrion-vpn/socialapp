@@ -4,10 +4,22 @@ import { useState } from "react"
 import { appConfig, isDesktopApp } from "@/api/bridge"
 import { api, currentApiBaseUrl, setApiBaseUrl } from "@/api/client"
 import { Page, Topbar } from "@/components/AppShell"
+import { Icon, type IconName } from "@/components/Icon"
 import { Spinner } from "@/components/States"
 import { useAsync } from "@/hooks/useAsync"
 import { useSession } from "@/store/session"
 import { humanizeError, useUi } from "@/store/ui"
+
+function SectionTitle({ icon, children }: { icon: IconName; children: string }) {
+  return (
+    <h2 className="card__title" style={{ display: "flex", alignItems: "center", gap: 10 }}>
+      <span className="section-icon">
+        <Icon name={icon} size={17} />
+      </span>
+      {children}
+    </h2>
+  )
+}
 
 export function SettingsRoute() {
   const { settings, updateSettings, updateStatus, checkForUpdates, toast, toastError } = useUi()
@@ -58,9 +70,11 @@ export function SettingsRoute() {
       <Topbar title="Settings" subtitle={`SocialApp ${appConfig.version}`} />
 
       <Page>
-        <div className="col" style={{ gap: 18, padding: 18 }}>
+        {/* The bottom padding keeps the last card clear of the window edge once
+            the column scrolls (see styles/shell.css for the scroll chain). */}
+        <div className="col" style={{ gap: 18, padding: 18, paddingBottom: 40 }}>
           <section className="card">
-            <h2 className="card__title">Server</h2>
+            <SectionTitle icon="server">Server</SectionTitle>
             <div className="col" style={{ gap: 10, padding: "0 16px 16px" }}>
               <p className="muted">
                 The desktop client is a pure API client. Point it at your Railway deployment - it
@@ -103,7 +117,7 @@ export function SettingsRoute() {
           </section>
 
           <section className="card">
-            <h2 className="card__title">Appearance</h2>
+            <SectionTitle icon="sun">Appearance</SectionTitle>
             <div className="col" style={{ gap: 12, padding: "0 16px 16px" }}>
               <label className="field">
                 <span className="field__label">Theme</span>
@@ -152,7 +166,7 @@ export function SettingsRoute() {
           </section>
 
           <section className="card">
-            <h2 className="card__title">Updates</h2>
+            <SectionTitle icon="arrow-up-circle">Updates</SectionTitle>
             <div className="col" style={{ gap: 10, padding: "0 16px 16px" }}>
               <label className="row">
                 <input
@@ -172,6 +186,7 @@ export function SettingsRoute() {
                   data-size="sm"
                   onClick={() => void checkForUpdates()}
                 >
+                  <Icon name="refresh" size={15} />
                   Check now
                 </button>
                 <span className="muted">
@@ -187,7 +202,7 @@ export function SettingsRoute() {
           </section>
 
           <section className="card">
-            <h2 className="card__title">Password</h2>
+            <SectionTitle icon="lock">Password</SectionTitle>
             <div className="col" style={{ gap: 10, padding: "0 16px 16px" }}>
               <input
                 className="input"
@@ -218,7 +233,7 @@ export function SettingsRoute() {
           </section>
 
           <section className="card">
-            <h2 className="card__title">Active sessions</h2>
+            <SectionTitle icon="clock">Active sessions</SectionTitle>
             <div className="col" style={{ gap: 8, padding: "0 16px 16px" }}>
               {sessions.loading ? (
                 <Spinner />
@@ -262,6 +277,7 @@ export function SettingsRoute() {
                   data-size="sm"
                   onClick={() => void logout()}
                 >
+                  <Icon name="log-out" size={15} />
                   Log out
                 </button>
               </div>
@@ -269,7 +285,7 @@ export function SettingsRoute() {
           </section>
 
           <section className="card">
-            <h2 className="card__title">About</h2>
+            <SectionTitle icon="info">About</SectionTitle>
             <div className="col" style={{ gap: 4, padding: "0 16px 16px" }} data-selectable>
               <span className="muted">{`Version ${appConfig.version}`}</span>
               <span className="muted">{`Platform ${appConfig.platform}`}</span>
