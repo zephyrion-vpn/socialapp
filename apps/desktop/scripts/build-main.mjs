@@ -7,7 +7,7 @@ import { readFileSync } from "node:fs"
 const pkg = JSON.parse(readFileSync(new URL("../package.json", import.meta.url), "utf8"))
 
 const isDev = process.env.NODE_ENV === "development"
-const PRODUCTION_FALLBACK_API_URL = "https://socialapp-api-production.up.railway.app"
+const PRODUCTION_FALLBACK_API_URL = "https://socialappserver-production.up.railway.app"
 
 const apiUrl =
   process.env.SOCIALAPP_API_URL?.trim() ||
