@@ -99,10 +99,13 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
+      # Diagnostics only: it must never turn a build failure into a confusing
+      # "path does not exist" error that hides the real one.
       - name: List produced artifacts
         if: always()
+        continue-on-error: true
         shell: pwsh
-        run: Get-ChildItem apps/desktop/release -File | Select-Object Name, Length
+        run: Get-ChildItem apps/desktop/release -File -ErrorAction SilentlyContinue | Select-Object Name, Length
 
       - name: Verify installer and portable .exe exist
         shell: pwsh
