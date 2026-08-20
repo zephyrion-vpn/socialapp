@@ -1,0 +1,48 @@
+# dependencies
+node_modules/
+.npm/
+
+# build output
+dist/
+build/
+release/
+*.tsbuildinfo
+apps/desktop/dist/
+apps/desktop/release/
+apps/desktop/build/
+apps/server/dist/
+packages/*/dist/
+
+# environment / secrets (never commit real values)
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.p12
+*.pfx
+
+# prisma
+apps/server/prisma/*.db
+apps/server/prisma/dev.db*
+
+# logs
+logs/
+*.log
+npm-debug.log*
+yarn-error.log*
+
+# test / coverage
+coverage/
+.vitest/
+
+# editors / os
+.vscode/*
+!.vscode/extensions.json
+.idea/
+.DS_Store
+Thumbs.db
+
+# electron / packaging caches
+.cache/
+.electron-builder-cache/

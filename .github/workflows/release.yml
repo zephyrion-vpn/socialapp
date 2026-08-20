@@ -1,0 +1,200 @@
+name: Release
+
+# Produces the installable Windows .exe and attaches it to a GitHub Release.
+#
+# Triggers:
+#   * push a tag           -> git tag v1.0.0 && git push origin v1.0.0
+#   * push a release branch -> git push origin HEAD:release/v1.0.0
+#   * manual               -> Actions > Release > Run workflow (enter version)
+on:
+  push:
+    tags:
+      - "v*"
+    branches:
+      - "release/**"
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Version to release (e.g. 1.0.0)"
+        required: true
+        default: "1.0.0"
+
+permissions:
+  contents: write
+
+jobs:
+  version:
+    name: Resolve version
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.resolve.outputs.version }}
+      tag: ${{ steps.resolve.outputs.tag }}
+    steps:
+      - id: resolve
+        shell: bash
+        run: |
+          set -euo pipefail
+          INPUT="${{ github.event.inputs.version }}"
+          if [ -n "$INPUT" ]; then
+            VERSION="$INPUT"
+          elif [[ "$GITHUB_REF" == refs/tags/* ]]; then
+            VERSION="${GITHUB_REF_NAME}"
+          else
+            VERSION="${GITHUB_REF_NAME#release/}"
+          fi
+          VERSION="${VERSION#v}"
+          if ! [[ "$VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+([-.0-9A-Za-z]*)$ ]]; then
+            echo "::error::Could not resolve a semver version from '$GITHUB_REF_NAME'"
+            exit 1
+          fi
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+          echo "tag=v$VERSION" >> "$GITHUB_OUTPUT"
+          echo "Releasing version $VERSION (tag v$VERSION)"
+
+  backend:
+    name: Build backend
+    needs: version
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Set version ${{ needs.version.outputs.version }}
+        run: node scripts/set-version.mjs "${{ needs.version.outputs.version }}"
+
+      - name: Install dependencies
+        run: npm install --no-audit --no-fund
+
+      - name: Build shared packages
+        run: npm run build:packages
+
+      - name: Generate Prisma client
+        run: npm run prisma:generate
+
+      - name: Build backend
+        run: npm run build -w @socialapp/server
+
+      - name: Build production Docker image (same image Railway builds)
+        run: docker build -f docker/Dockerfile -t socialapp-server:${{ needs.version.outputs.version }} .
+
+      - name: Create backend bundle
+        run: |
+          mkdir -p artifacts
+          tar -czf "artifacts/socialapp-server-${{ needs.version.outputs.version }}.tar.gz" \
+            apps/server/dist apps/server/prisma apps/server/package.json \
+            packages/shared/dist packages/shared/package.json \
+            package.json docker/Dockerfile railway.json
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: backend-bundle
+          path: artifacts/*
+          retention-days: 14
+
+  desktop:
+    name: Build Windows desktop client (.exe)
+    needs: version
+    runs-on: windows-latest
+    env:
+      # Configure Settings > Secrets and variables > Actions > Variables:
+      #   SOCIALAPP_API_URL = https://<your-service>.up.railway.app
+      # If unset, the fallback from apps/desktop/electron/config.ts is used.
+      SOCIALAPP_API_URL: ${{ vars.SOCIALAPP_API_URL }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Set version ${{ needs.version.outputs.version }}
+        run: node scripts/set-version.mjs "${{ needs.version.outputs.version }}"
+
+      - name: Install dependencies
+        run: npm install --no-audit --no-fund
+
+      - name: Build shared packages
+        run: npm run build:packages
+
+      - name: Build renderer + electron main process
+        run: npm run build -w @socialapp/desktop
+
+      - name: Package Windows installer + portable executable
+        run: npm run pack:win -w @socialapp/desktop
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: List produced artifacts
+        shell: pwsh
+        run: Get-ChildItem apps/desktop/release -File | Select-Object Name, Length
+
+      - name: Verify installer and portable .exe exist
+        shell: pwsh
+        run: |
+          $version = "${{ needs.version.outputs.version }}"
+          $setup = "apps/desktop/release/SocialApp-Setup-$version.exe"
+          $portable = "apps/desktop/release/SocialApp-Portable-$version.exe"
+          if (!(Test-Path $setup)) { throw "missing installer: $setup" }
+          if (!(Test-Path $portable)) { throw "missing portable build: $portable" }
+          Write-Host "OK installer:  $((Get-Item $setup).Length) bytes"
+          Write-Host "OK portable:   $((Get-Item $portable).Length) bytes"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: windows-desktop
+          path: |
+            apps/desktop/release/*.exe
+            apps/desktop/release/*.blockmap
+            apps/desktop/release/latest.yml
+          retention-days: 30
+
+  publish:
+    name: Publish GitHub Release
+    needs: [version, backend, desktop]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          path: dist-artifacts
+
+      - name: Flatten artifacts
+        run: |
+          mkdir -p release
+          find dist-artifacts -type f -exec cp {} release/ \;
+          ls -la release
+
+      - name: Create / update GitHub Release ${{ needs.version.outputs.tag }}
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ needs.version.outputs.tag }}
+          name: SocialApp ${{ needs.version.outputs.version }}
+          target_commitish: ${{ github.sha }}
+          draft: false
+          prerelease: false
+          fail_on_unmatched_files: true
+          files: |
+            release/SocialApp-Setup-${{ needs.version.outputs.version }}.exe
+            release/SocialApp-Portable-${{ needs.version.outputs.version }}.exe
+            release/latest.yml
+            release/*.blockmap
+            release/socialapp-server-${{ needs.version.outputs.version }}.tar.gz
+          body: |
+            ## SocialApp ${{ needs.version.outputs.version }}
+
+            **Windows desktop client**
+
+            | File | Description |
+            | --- | --- |
+            | `SocialApp-Setup-${{ needs.version.outputs.version }}.exe` | Installer (Start Menu + desktop shortcut, uninstall support) |
+            | `SocialApp-Portable-${{ needs.version.outputs.version }}.exe` | Portable build, no installation required |
+
+            The desktop app is a **pure client**: it never starts a local backend.
+            It talks to the Railway API over HTTPS. The server URL is baked in at
+            build time and can be changed at any time in **Settings > Server**.
+
+            **Backend** - `socialapp-server-${{ needs.version.outputs.version }}.tar.gz`
+            contains the compiled API, Prisma schema and migrations. Deploy it to
+            Railway with the Dockerfile in `docker/Dockerfile` (see `docs/RAILWAY.md`).

@@ -1,0 +1,106 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  backend:
+    name: Lint, typecheck, tests & backend build
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: socialapp_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 10
+
+    env:
+      NODE_ENV: test
+      DATABASE_URL: postgresql://postgres:postgres@localhost:5432/socialapp_test?schema=public
+      JWT_ACCESS_SECRET: ci-only-secret-value-not-used-in-production-0123456789
+      BCRYPT_ROUNDS: 10
+      LOG_LEVEL: silent
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Install dependencies
+        run: npm install --no-audit --no-fund
+
+      - name: Build shared packages
+        run: npm run build:packages
+
+      - name: Generate Prisma client
+        run: npm run prisma:generate
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Typecheck
+        run: npm run typecheck
+
+      - name: Apply database migrations
+        run: npm run prisma:deploy
+
+      - name: Tests (registration, login, posts, likes, follows, replies, feed)
+        run: npm test
+
+      - name: Build backend
+        run: npm run build -w @socialapp/server
+
+      - name: Validate production Docker image
+        run: docker build -f docker/Dockerfile -t socialapp-server:ci .
+
+  desktop:
+    name: Windows desktop build check
+    runs-on: windows-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Install dependencies
+        run: npm install --no-audit --no-fund
+
+      - name: Build shared packages
+        run: npm run build:packages
+
+      - name: Build desktop renderer + electron main process
+        run: npm run build -w @socialapp/desktop
+
+      - name: Package unpacked Windows app (electron-builder smoke test)
+        run: npm run pack:dir -w @socialapp/desktop
+
+      - name: Verify the Windows executable was produced
+        shell: pwsh
+        run: |
+          $exe = "apps/desktop/release/win-unpacked/SocialApp.exe"
+          if (!(Test-Path $exe)) {
+            Get-ChildItem -Recurse apps/desktop/release | Select-Object FullName
+            throw "SocialApp.exe was not produced by electron-builder"
+          }
+          Write-Host "OK: $exe ($((Get-Item $exe).Length) bytes)"

@@ -1,0 +1,17 @@
+**/node_modules
+**/dist
+**/release
+**/build
+**/coverage
+**/.env
+**/.env.*
+!**/.env.example
+.git
+.github
+.gitignore
+apps/desktop
+docs
+*.md
+!apps/server/README.md
+**/*.log
+**/.DS_Store
