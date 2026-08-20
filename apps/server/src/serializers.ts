@@ -8,7 +8,9 @@ import type {
   PublicUser,
 } from "@socialapp/shared"
 
+import { env } from "./config/env"
 import { prisma } from "./lib/prisma"
+import { publicUrlFor } from "./lib/storage"
 
 export const userInclude = { profile: true } satisfies Prisma.UserInclude
 
@@ -156,6 +158,38 @@ export async function buildViewerContext(
   return context
 }
 
+/**
+ * Media URLs are denormalized into the database when a row is written, so a row
+ * created before S3_PUBLIC_BASE_URL was configured still points at the private
+ * S3 API endpoint - which only answers signed requests (R2 returns
+ * `InvalidArgument: Authorization`, S3 returns `AccessDenied`). Rebuilding the
+ * URL while serializing keeps responses correct no matter when the row was
+ * written, and makes moving the bucket to another domain a config-only change.
+ *
+ * Untouched on purpose: everything when storage is disabled, and any URL that
+ * does not live under our own endpoint (external avatars from the seed script).
+ */
+export function toPublicMediaUrl(
+  storedUrl: string | null | undefined,
+  storageKey?: string | null,
+): string | null {
+  if (!env.storageEnabled) return storedUrl ?? null
+  if (storageKey) return publicUrlFor(storageKey)
+  if (!storedUrl) return null
+
+  const publicBase = env.S3_PUBLIC_BASE_URL?.replace(/\/+$/, "")
+  if (publicBase && storedUrl.startsWith(`${publicBase}/`)) return storedUrl
+
+  const endpoint = env.S3_ENDPOINT?.replace(/\/+$/, "")
+  if (!endpoint || !storedUrl.startsWith(`${endpoint}/`)) return storedUrl
+
+  let key = storedUrl.slice(endpoint.length + 1)
+  if (env.S3_BUCKET && key.startsWith(`${env.S3_BUCKET}/`)) {
+    key = key.slice(env.S3_BUCKET.length + 1)
+  }
+  return key ? publicUrlFor(key) : storedUrl
+}
+
 export function toPublicUser(user: UserWithProfile, context?: ViewerContext): PublicUser {
   const profile = user.profile
   const viewerId = context?.viewerId
@@ -164,8 +198,8 @@ export function toPublicUser(user: UserWithProfile, context?: ViewerContext): Pu
     username: user.username,
     displayName: profile?.displayName ?? user.username,
     bio: profile?.bio ?? null,
-    avatarUrl: profile?.avatarUrl ?? null,
-    bannerUrl: profile?.bannerUrl ?? null,
+    avatarUrl: toPublicMediaUrl(profile?.avatarUrl),
+    bannerUrl: toPublicMediaUrl(profile?.bannerUrl),
     location: profile?.location ?? null,
     website: profile?.website ?? null,
     createdAt: user.createdAt.toISOString(),
@@ -187,7 +221,7 @@ export function toPublicUser(user: UserWithProfile, context?: ViewerContext): Pu
 function toMedia(media: PostWithRelations["media"][number]): MediaAttachment {
   return {
     id: media.id,
-    url: media.url,
+    url: toPublicMediaUrl(media.url, media.storageKey) ?? media.url,
     type: media.type,
     altText: media.altText,
     width: media.width,
