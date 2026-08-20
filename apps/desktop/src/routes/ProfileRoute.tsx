@@ -6,6 +6,7 @@ import { api } from "@/api/client"
 import { Page, Topbar } from "@/components/AppShell"
 import { Avatar } from "@/components/Avatar"
 import { FollowButton } from "@/components/FollowButton"
+import { Icon } from "@/components/Icon"
 import { PostList } from "@/components/PostList"
 import { ProfileSkeleton } from "@/components/Skeletons"
 import { ErrorState } from "@/components/States"
@@ -30,6 +31,7 @@ export function ProfileRoute({ username, tab }: { username: string; tab: Tab }) 
   const { user: me, patchUser } = useSession()
   const { toast, toastError } = useUi()
   const [editing, setEditing] = useState(false)
+  const [openingThread, setOpeningThread] = useState(false)
 
   const profile = useAsync<{ user: PublicUser }>(
     () => api.users.byUsername(username),
@@ -72,6 +74,20 @@ export function ProfileRoute({ username, tab }: { username: string; tab: Tab }) 
       toast(result.blocked ? `Blocked @${user.username}` : `Unblocked @${user.username}`, "success")
     } catch (error) {
       toastError(error)
+    }
+  }
+
+  // Reuses the existing thread when there is one - the server is idempotent here.
+  async function openThread() {
+    if (!user || openingThread) return
+    setOpeningThread(true)
+    try {
+      const { conversation } = await api.messages.start(user.username)
+      navigate(routes.conversation(conversation.id))
+    } catch (error) {
+      toastError(error, "Could not open a conversation")
+    } finally {
+      setOpeningThread(false)
     }
   }
 
@@ -127,10 +143,20 @@ export function ProfileRoute({ username, tab }: { username: string; tab: Tab }) 
                   data-size="sm"
                   onClick={() => setEditing(true)}
                 >
+                  <Icon name="pen" size={15} />
                   Edit profile
                 </button>
               ) : (
                 <>
+                  <button
+                    type="button"
+                    className="icon-button"
+                    title={`Message @${user.username}`}
+                    disabled={openingThread || user.isBlocked}
+                    onClick={() => void openThread()}
+                  >
+                    <Icon name="message-circle" size={18} label="Message" />
+                  </button>
                   <button
                     type="button"
                     className="button"
@@ -168,7 +194,12 @@ export function ProfileRoute({ username, tab }: { username: string; tab: Tab }) 
           ) : null}
 
           <div className="row muted" style={{ gap: 14, marginTop: 8, flexWrap: "wrap" }}>
-            {user.location ? <span>{`\uD83D\uDCCD ${user.location}`}</span> : null}
+            {user.location ? (
+              <span className="row" style={{ gap: 5 }}>
+                <Icon name="map-pin" size={15} />
+                {user.location}
+              </span>
+            ) : null}
             {user.website ? (
               <button
                 type="button"
@@ -178,7 +209,10 @@ export function ProfileRoute({ username, tab }: { username: string; tab: Tab }) 
                 {user.website.replace(/^https?:\/\//, "")}
               </button>
             ) : null}
-            <span>{`Joined ${new Date(user.createdAt).toLocaleDateString()}`}</span>
+            <span className="row" style={{ gap: 5 }}>
+              <Icon name="clock" size={15} />
+              {`Joined ${new Date(user.createdAt).toLocaleDateString()}`}
+            </span>
           </div>
 
           <div className="profile__stats">
@@ -208,7 +242,7 @@ export function ProfileRoute({ username, tab }: { username: string; tab: Tab }) 
 
         <PostList
           result={timeline}
-          emptyIcon={"\uD83D\uDCDD"}
+          emptyIcon={<Icon name="pen" size={26} />}
           emptyTitle={isSelf ? "You have not posted here yet" : "Nothing here yet"}
         />
       </Page>
