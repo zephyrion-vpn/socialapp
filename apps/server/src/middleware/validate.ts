@@ -1,7 +1,7 @@
 import type { NextFunction, Request, RequestHandler, Response } from "express"
-import { ZodError, type ZodTypeAny } from "zod"
+import type { ZodTypeAny } from "zod"
 
-import { validationError } from "../lib/errors"
+import { isZodError, validationError } from "../lib/errors"
 
 export interface ValidationSchemas {
   body?: ZodTypeAny
@@ -24,7 +24,9 @@ export function validate(schemas: ValidationSchemas): RequestHandler {
       }
       next()
     } catch (error) {
-      if (error instanceof ZodError) {
+      // Shape based detection on purpose: schemas owned by @socialapp/shared
+      // can raise a ZodError from a second zod instance. See isZodError().
+      if (isZodError(error)) {
         next(validationError("Some fields need your attention", error.flatten()))
         return
       }

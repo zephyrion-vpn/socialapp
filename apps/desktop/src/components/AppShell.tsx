@@ -1,19 +1,21 @@
 import type { ReactNode } from "react"
 
+import { Icon } from "@/components/Icon"
 import { RightRail } from "@/components/RightRail"
 import { Sidebar } from "@/components/Sidebar"
 import { useRouter } from "@/router"
 
 interface ShellProps {
   unread: number
+  unreadMessages?: number
   onCompose: () => void
   children: ReactNode
 }
 
-export function AppShell({ unread, onCompose, children }: ShellProps) {
+export function AppShell({ unread, unreadMessages, onCompose, children }: ShellProps) {
   return (
     <div className="app">
-      <Sidebar unread={unread} onCompose={onCompose} />
+      <Sidebar unread={unread} unreadMessages={unreadMessages} onCompose={onCompose} />
       <main className="main">{children}</main>
       <RightRail />
     </div>
@@ -34,7 +36,7 @@ export function Topbar({ title, subtitle, showBack, actions }: TopbarProps) {
     <header className="topbar">
       {showBack && canGoBack ? (
         <button type="button" className="icon-button" title="Back" onClick={back}>
-          {"\u2190"}
+          <Icon name="arrow-left" size={19} label="Back" />
         </button>
       ) : null}
       <div>

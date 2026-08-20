@@ -8,6 +8,7 @@ import { useRef, useState } from "react"
 
 import { api } from "@/api/client"
 import { Avatar } from "@/components/Avatar"
+import { Icon } from "@/components/Icon"
 import { Spinner } from "@/components/States"
 import { useSession } from "@/store/session"
 import { useUi } from "@/store/ui"
@@ -108,7 +109,7 @@ export function Composer({ parent, autoFocus, placeholder, onPosted, onCancel }:
                   aria-label="Remove image"
                   onClick={() => setMedia((current) => current.filter((m) => m.key !== item.key))}
                 >
-                  {"\u00D7"}
+                  <Icon name="x" size={14} />
                 </button>
               </div>
             ))}
@@ -131,7 +132,7 @@ export function Composer({ parent, autoFocus, placeholder, onPosted, onCancel }:
             disabled={uploading}
             onClick={() => fileInput.current?.click()}
           >
-            {uploading ? <Spinner /> : "\uD83D\uDDBC"}
+            {uploading ? <Spinner /> : <Icon name="image" size={19} label="Add images" />}
           </button>
 
           <span

@@ -2,6 +2,7 @@ import type { Post } from "@socialapp/shared"
 
 import { api } from "@/api/client"
 import { Page, Topbar } from "@/components/AppShell"
+import { Icon } from "@/components/Icon"
 import { PostList } from "@/components/PostList"
 import { usePaginated } from "@/hooks/usePaginated"
 
@@ -17,7 +18,7 @@ export function BookmarksRoute() {
       <Page>
         <PostList
           result={bookmarks}
-          emptyIcon={"\uD83D\uDD16"}
+          emptyIcon={<Icon name="bookmark" size={26} />}
           emptyTitle="Nothing saved yet"
           emptyBody="Tap the bookmark icon on any post to keep it here."
         />

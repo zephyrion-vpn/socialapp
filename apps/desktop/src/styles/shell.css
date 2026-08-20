@@ -1,0 +1,147 @@
+/*
+ * Shell layout + icon rules. Loaded straight after global.css.
+ *
+ * Why this file exists: global.css owns the visual language (tokens, cards,
+ * posts, buttons). The rules below are about *geometry* - which box scrolls and
+ * which box clips - plus the sizing of the SVG icon set, so they are kept
+ * together and documented rather than scattered.
+ */
+
+/* ----------------------------------------------------------- scroll chain */
+/*
+ * The Settings page could not be scrolled, and any long column had the same
+ * bug.
+ *
+ * .app is `display: grid; height: 100vh` with a single implicit row. An
+ * implicit grid row is sized `auto`, and a grid/flex item's `min-height`
+ * resolves to `min-content` - not 0. So a tall child (Settings is the tallest
+ * page in the app) forced the row to grow past 100vh instead of scrolling
+ * inside it. The overflow then landed on <body>, which is `overflow: hidden`
+ * for the desktop shell, so the rest of the page was simply cut off with no
+ * scrollbar anywhere.
+ *
+ * The fix is the standard one for nested scroll containers: clamp the row,
+ * then carry `min-height: 0` all the way down the chain to the element that is
+ * supposed to scroll (.scroll-area).
+ */
+.app {
+  grid-template-rows: minmax(0, 100vh);
+  height: 100vh;
+  overflow: hidden;
+}
+
+.main {
+  min-width: 0;
+  min-height: 0;
+  /* The column itself never scrolls - .scroll-area does. */
+  overflow: hidden;
+}
+
+.scroll-area {
+  flex: 1 1 0;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  /* Reserve the gutter so content does not shift when a scrollbar appears. */
+  scrollbar-gutter: stable;
+}
+
+.sidebar {
+  min-height: 0;
+  overflow-y: auto;
+}
+
+.right-rail {
+  min-height: 0;
+}
+
+/* ------------------------------------------------------------------ icons */
+.icon {
+  flex: none;
+  vertical-align: -0.15em;
+}
+
+/* Icons inherit the colour of whatever control they sit in, so hover and
+ * active states need no icon specific rules. */
+.sidebar__icon .icon,
+.sidebar__logo .icon,
+.icon-button .icon,
+.post-action .icon,
+.button .icon {
+  color: inherit;
+}
+
+.sidebar__logo {
+  /* The mark is an SVG now: drop the emoji font sizing. */
+  font-size: 0;
+  box-shadow: 0 6px 16px rgba(109, 94, 252, 0.35);
+}
+
+.sidebar__item[data-active="true"] .sidebar__icon {
+  color: var(--accent);
+}
+
+.search-input .icon {
+  color: var(--text-faint);
+}
+
+/* Empty/error states used a 34px emoji. A tinted rounded tile reads as
+ * intentional at any DPI and follows the accent colour. */
+.state__icon {
+  display: grid;
+  place-items: center;
+  width: 60px;
+  height: 60px;
+  margin-bottom: 6px;
+  border-radius: 20px;
+  background: var(--accent-soft);
+  color: var(--accent);
+  font-size: 26px;
+}
+
+.state[data-tone="error"] .state__icon {
+  background: rgba(239, 68, 68, 0.12);
+  color: #ef4444;
+}
+
+.banner .icon {
+  flex: none;
+}
+
+.banner[data-tone="warn"] .icon {
+  color: #b45309;
+}
+
+:root[data-theme="dark"] .banner[data-tone="warn"] .icon {
+  color: var(--bookmark);
+}
+
+.banner[data-tone="accent"] .icon {
+  color: var(--accent);
+}
+
+/* Filled icons already carry the state colour, so the like/bookmark buttons
+ * only need the subtle pop. */
+.post-action[data-on="true"] .icon {
+  animation: icon-pop 180ms cubic-bezier(0.2, 0.8, 0.3, 1.2);
+}
+
+@keyframes icon-pop {
+  0% {
+    transform: scale(0.82);
+  }
+  60% {
+    transform: scale(1.12);
+  }
+}
+
+/* Section headings inside Settings get an icon tile. */
+.section-icon {
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 10px;
+  background: var(--accent-soft);
+  color: var(--accent);
+}

@@ -3,6 +3,7 @@ import { useEffect, useState } from "react"
 
 import { api } from "@/api/client"
 import { Page, Topbar } from "@/components/AppShell"
+import { Icon } from "@/components/Icon"
 import { PostList } from "@/components/PostList"
 import { UserRowSkeleton } from "@/components/Skeletons"
 import { EmptyState, ErrorState } from "@/components/States"
@@ -40,7 +41,7 @@ export function SearchRoute({ query }: { query: string }) {
               if (draft.trim()) navigate(routes.search(draft.trim()), { replace: true })
             }}
           >
-            <span>{"\uD83D\uDD0D"}</span>
+            <Icon name="search" size={16} />
             <input
               value={draft}
               autoFocus={!query}
@@ -74,14 +75,14 @@ export function SearchRoute({ query }: { query: string }) {
       <Page>
         {!query ? (
           <EmptyState
-            icon={"\uD83D\uDD0D"}
+            icon={<Icon name="search" size={26} />}
             title="Search SocialApp"
             body="Find posts, hashtags and people. Press / anywhere to jump here."
           />
         ) : tab === "posts" ? (
           <PostList
             result={posts}
-            emptyIcon={"\uD83D\uDD0E"}
+            emptyIcon={<Icon name="search" size={26} />}
             emptyTitle="No posts matched"
             emptyBody="Try a different word, or search for people instead."
           />
@@ -94,7 +95,7 @@ export function SearchRoute({ query }: { query: string }) {
         ) : people.state === "error" && people.items.length === 0 ? (
           <ErrorState error={people.error} onRetry={() => void people.refresh()} />
         ) : people.items.length === 0 ? (
-          <EmptyState icon={"\uD83D\uDC64"} title="No people matched" />
+          <EmptyState icon={<Icon name="users" size={26} />} title="No people matched" />
         ) : (
           <div>
             {people.items.map((user) => (

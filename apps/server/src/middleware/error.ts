@@ -2,11 +2,16 @@ import { Prisma } from "@prisma/client"
 import { ERROR_CODES } from "@socialapp/shared"
 import type { NextFunction, Request, Response } from "express"
 import { MulterError } from "multer"
-import { ZodError } from "zod"
 
 import { env } from "../config/env"
-import { HttpError } from "../lib/errors"
+import { HttpError, isZodError } from "../lib/errors"
 import { logger } from "../lib/logger"
+
+// P2021 = table does not exist, P2022 = column does not exist. The database is
+// missing something the generated client expects, which means migrations were
+// not applied to this environment. That is a deployment fault rather than a bad
+// request, so it has to surface as 5xx and be logged with logger.error.
+const SCHEMA_MISMATCH_CODES = new Set(["P2021", "P2022"])
 
 export function notFoundHandler(req: Request, res: Response): void {
   res.status(404).json({
@@ -30,7 +35,10 @@ export function errorHandler(error: unknown, req: Request, res: Response, _next:
     code = error.code
     message = error.message
     details = error.details
-  } else if (error instanceof ZodError) {
+  } else if (isZodError(error)) {
+    // Covers schemas parsed outside the validate() middleware, including those
+    // owned by @socialapp/shared, whose ZodError may come from a second zod
+    // instance and would not satisfy `instanceof`. See isZodError().
     status = 422
     code = ERROR_CODES.VALIDATION_ERROR
     message = "Some fields need your attention"
@@ -49,6 +57,10 @@ export function errorHandler(error: unknown, req: Request, res: Response, _next:
       status = 404
       code = ERROR_CODES.NOT_FOUND
       message = "Not found"
+    } else if (SCHEMA_MISMATCH_CODES.has(error.code)) {
+      status = 500
+      code = ERROR_CODES.INTERNAL_ERROR
+      message = "Something went wrong on our side"
     } else {
       status = 400
       code = ERROR_CODES.VALIDATION_ERROR

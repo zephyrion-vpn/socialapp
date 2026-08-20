@@ -5,6 +5,7 @@ import { api } from "@/api/client"
 import { AppShell } from "@/components/AppShell"
 import { OfflineBanner, UpdateBanner } from "@/components/Banners"
 import { Composer } from "@/components/Composer"
+import { Icon } from "@/components/Icon"
 import { Modal } from "@/components/Modal"
 import { ShortcutsDialog } from "@/components/ShortcutsDialog"
 import { Spinner } from "@/components/States"
@@ -13,9 +14,11 @@ import { useKeyboardShortcuts } from "@/hooks/useKeyboardShortcuts"
 import { routes, useRouter, type Route } from "@/router"
 import { AuthScreen } from "@/routes/AuthScreen"
 import { BookmarksRoute } from "@/routes/BookmarksRoute"
+import { ConversationRoute } from "@/routes/ConversationRoute"
 import { ExploreRoute } from "@/routes/ExploreRoute"
 import { HashtagRoute } from "@/routes/HashtagRoute"
 import { HomeRoute } from "@/routes/HomeRoute"
+import { MessagesRoute } from "@/routes/MessagesRoute"
 import { NotificationsRoute } from "@/routes/NotificationsRoute"
 import { PostRoute } from "@/routes/PostRoute"
 import { ProfileRoute } from "@/routes/ProfileRoute"
@@ -31,8 +34,8 @@ export function App() {
     return (
       <div className="center">
         <div className="col" style={{ alignItems: "center", gap: 14 }}>
-          <span className="sidebar__logo" style={{ width: 52, height: 52, fontSize: 26 }}>
-            {"\uD83D\uDCAC"}
+          <span className="sidebar__logo" style={{ width: 52, height: 52 }}>
+            <Icon name="logo" size={28} />
           </span>
           <Spinner />
           <span className="muted">Restoring your session\u2026</span>
@@ -61,6 +64,10 @@ function RouteView({ route, onSeen }: { route: Route; onSeen: () => void }) {
       return <NotificationsRoute onSeen={onSeen} />
     case "bookmarks":
       return <BookmarksRoute />
+    case "messages":
+      return <MessagesRoute />
+    case "conversation":
+      return <ConversationRoute id={route.id} onRead={onSeen} />
     case "settings":
       return <SettingsRoute />
     case "search":
@@ -81,27 +88,45 @@ function AuthenticatedApp() {
   const { settings, shortcutsOpen, setShortcutsOpen, toast, checkForUpdates } = useUi()
   const [composerOpen, setComposerOpen] = useState(false)
   const [unread, setUnread] = useState(0)
+  const [unreadMessages, setUnreadMessages] = useState(0)
   const [refreshTick, setRefreshTick] = useState(0)
   const previousUnread = useRef(0)
+  const previousMessages = useRef(0)
 
   const loadUnread = useCallback(async () => {
     try {
-      const { count } = await api.notifications.unreadCount()
-      if (
-        count > previousUnread.current &&
-        settings.desktopNotifications &&
-        !document.hasFocus()
-      ) {
+      const [notifications, messages] = await Promise.all([
+        api.notifications.unreadCount(),
+        // A server that predates direct messages must not break the badge.
+        api.messages.unreadCount().catch(() => ({ count: 0 })),
+      ])
+
+      const notify = settings.desktopNotifications && !document.hasFocus()
+
+      if (notifications.count > previousUnread.current && notify) {
         void bridge.system.notify({
           title: "SocialApp",
-          body: count === 1 ? "You have a new notification" : `You have ${count} new notifications`,
+          body:
+            notifications.count === 1
+              ? "You have a new notification"
+              : `You have ${notifications.count} new notifications`,
         })
       }
-      previousUnread.current = count
-      setUnread(count)
-      void bridge.system.setBadge(count)
+
+      if (messages.count > previousMessages.current && notify) {
+        void bridge.system.notify({
+          title: "SocialApp",
+          body: messages.count === 1 ? "You have a new message" : "You have new messages",
+        })
+      }
+
+      previousUnread.current = notifications.count
+      previousMessages.current = messages.count
+      setUnread(notifications.count)
+      setUnreadMessages(messages.count)
+      void bridge.system.setBadge(notifications.count + messages.count)
     } catch {
-      // Notification polling must never interrupt the UI.
+      // Polling must never interrupt the UI.
     }
   }, [settings.desktopNotifications])
 
@@ -140,7 +165,11 @@ function AuthenticatedApp() {
 
   return (
     <>
-      <AppShell unread={unread} onCompose={() => setComposerOpen(true)}>
+      <AppShell
+        unread={unread}
+        unreadMessages={unreadMessages}
+        onCompose={() => setComposerOpen(true)}
+      >
         <OfflineBanner />
         <UpdateBanner />
         <RouteView key={`${path}#${refreshTick}`} route={route} onSeen={loadUnread} />

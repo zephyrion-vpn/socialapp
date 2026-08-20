@@ -1,3 +1,4 @@
+import { Icon } from "@/components/Icon"
 import { useUi } from "@/store/ui"
 
 export function Toasts() {
@@ -18,7 +19,7 @@ export function Toasts() {
             aria-label="Dismiss"
             onClick={() => dismissToast(toast.id)}
           >
-            {"\u00D7"}
+            <Icon name="x" size={15} />
           </button>
         </div>
       ))}

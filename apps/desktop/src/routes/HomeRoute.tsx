@@ -4,6 +4,7 @@ import { useState } from "react"
 import { api } from "@/api/client"
 import { Page, Topbar } from "@/components/AppShell"
 import { Composer } from "@/components/Composer"
+import { Icon } from "@/components/Icon"
 import { PostList } from "@/components/PostList"
 import { usePaginated } from "@/hooks/usePaginated"
 
@@ -29,7 +30,7 @@ export function HomeRoute() {
             title="Refresh (R)"
             onClick={() => void feed.refresh()}
           >
-            {"\u21BB"}
+            <Icon name="refresh" size={18} label="Refresh" />
           </button>
         }
       />
@@ -52,7 +53,7 @@ export function HomeRoute() {
         <Composer onPosted={(post) => feed.setItems((items) => [post, ...items])} />
         <PostList
           result={feed}
-          emptyIcon={"\uD83C\uDF31"}
+          emptyIcon={<Icon name="sprout" size={26} />}
           emptyTitle={tab === "home" ? "Your timeline is quiet" : "Nothing to show yet"}
           emptyBody={
             tab === "home"

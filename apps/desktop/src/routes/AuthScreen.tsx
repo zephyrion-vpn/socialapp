@@ -2,11 +2,18 @@ import { useState } from "react"
 
 import { appConfig, bridge } from "@/api/bridge"
 import { api, currentApiBaseUrl, setApiBaseUrl } from "@/api/client"
+import { Icon } from "@/components/Icon"
 import { Spinner } from "@/components/States"
 import { useSession } from "@/store/session"
 import { humanizeError, useUi } from "@/store/ui"
 
 type Mode = "login" | "register" | "forgot"
+
+const HIGHLIGHTS = [
+  "Encrypted session storage via Windows DPAPI",
+  "Works against any deployment of the SocialApp API",
+  "Keyboard-first, dark and light themes",
+]
 
 export function AuthScreen() {
   const { login, register } = useSession()
@@ -73,8 +80,8 @@ export function AuthScreen() {
     <div className="auth">
       <section className="auth__hero">
         <div className="row" style={{ gap: 12 }}>
-          <span className="sidebar__logo" style={{ width: 44, height: 44, fontSize: 22 }}>
-            {"\uD83D\uDCAC"}
+          <span className="sidebar__logo" style={{ width: 44, height: 44 }}>
+            <Icon name="logo" size={24} />
           </span>
           <strong style={{ fontSize: 20 }}>SocialApp</strong>
         </div>
@@ -88,10 +95,13 @@ export function AuthScreen() {
           images and keep up with trends. Your account lives on the server, so it follows you to
           every device.
         </p>
-        <div className="col" style={{ gap: 6, opacity: 0.85, fontSize: 14 }}>
-          <span>{"\u2713 Encrypted session storage via Windows DPAPI"}</span>
-          <span>{"\u2713 Works against any deployment of the SocialApp API"}</span>
-          <span>{"\u2713 Keyboard-first, dark and light themes"}</span>
+        <div className="col" style={{ gap: 8, opacity: 0.9, fontSize: 14 }}>
+          {HIGHLIGHTS.map((highlight) => (
+            <span key={highlight} className="row" style={{ gap: 8 }}>
+              <Icon name="check" size={16} strokeWidth={2.2} />
+              {highlight}
+            </span>
+          ))}
         </div>
       </section>
 
@@ -215,6 +225,7 @@ export function AuthScreen() {
             data-size="sm"
             onClick={() => setServerOpen((open) => !open)}
           >
+            <Icon name="server" size={15} />
             {`Server: ${currentApiBaseUrl()}`}
           </button>
 
@@ -238,7 +249,12 @@ export function AuthScreen() {
                 >
                   {serverState === "checking" ? "Checking\u2026" : "Save and test"}
                 </button>
-                {serverState === "ok" ? <span className="muted">{"\u2713 reachable"}</span> : null}
+                {serverState === "ok" ? (
+                  <span className="row muted" style={{ gap: 5 }}>
+                    <Icon name="check" size={15} strokeWidth={2.2} />
+                    reachable
+                  </span>
+                ) : null}
                 {serverState === "fail" ? (
                   <span className="field__error">unreachable</span>
                 ) : null}

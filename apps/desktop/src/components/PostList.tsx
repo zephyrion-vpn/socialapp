@@ -1,5 +1,5 @@
 import type { Post } from "@socialapp/shared"
-import { useEffect, useRef } from "react"
+import { useEffect, useRef, type ReactNode } from "react"
 
 import { PostCard } from "@/components/PostCard"
 import { PostListSkeleton } from "@/components/Skeletons"
@@ -10,7 +10,7 @@ interface Props {
   result: PaginatedResult<Post>
   emptyTitle?: string
   emptyBody?: string
-  emptyIcon?: string
+  emptyIcon?: ReactNode
 }
 
 export function PostList({
