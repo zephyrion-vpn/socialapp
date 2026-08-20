@@ -4,9 +4,14 @@ import { defineConfig } from "vite"
 
 const DEV_PORT = 5273
 
+// Default API endpoints. Override at build time with SOCIALAPP_API_URL, or at
+// runtime in the app under Settings > Server - no code changes needed.
+const PRODUCTION_API_URL = "https://socialappserver-production.up.railway.app"
+const DEVELOPMENT_API_URL = "http://localhost:3000"
+
 // The renderer is a plain SPA bundle loaded from the packaged app over file://,
 // so the base must be relative.
-export default defineConfig({
+export default defineConfig(({ command }) => ({
   base: "./",
   plugins: [react()],
   resolve: {
@@ -16,7 +21,8 @@ export default defineConfig({
   },
   define: {
     __DEFAULT_API_URL__: JSON.stringify(
-      process.env.SOCIALAPP_API_URL?.trim() || "http://localhost:3000",
+      process.env.SOCIALAPP_API_URL?.trim() ||
+        (command === "build" ? PRODUCTION_API_URL : DEVELOPMENT_API_URL),
     ),
   },
   build: {
@@ -30,4 +36,4 @@ export default defineConfig({
     port: DEV_PORT,
     strictPort: true,
   },
-})
+}))
