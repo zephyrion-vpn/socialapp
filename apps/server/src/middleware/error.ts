@@ -2,10 +2,9 @@ import { Prisma } from "@prisma/client"
 import { ERROR_CODES } from "@socialapp/shared"
 import type { NextFunction, Request, Response } from "express"
 import { MulterError } from "multer"
-import { ZodError } from "zod"
 
 import { env } from "../config/env"
-import { HttpError } from "../lib/errors"
+import { HttpError, isZodError } from "../lib/errors"
 import { logger } from "../lib/logger"
 
 export function notFoundHandler(req: Request, res: Response): void {
@@ -30,7 +29,10 @@ export function errorHandler(error: unknown, req: Request, res: Response, _next:
     code = error.code
     message = error.message
     details = error.details
-  } else if (error instanceof ZodError) {
+  } else if (isZodError(error)) {
+    // Covers schemas parsed outside the validate() middleware, including those
+    // owned by @socialapp/shared, whose ZodError may come from a second zod
+    // instance and would not satisfy `instanceof`. See isZodError().
     status = 422
     code = ERROR_CODES.VALIDATION_ERROR
     message = "Some fields need your attention"
