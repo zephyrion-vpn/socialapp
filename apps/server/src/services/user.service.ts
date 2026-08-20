@@ -20,6 +20,9 @@ async function findUserByUsername(username: string) {
   return user
 }
 
+/** A user row shaped by `userInclude` - the payload accepted by `toPublicUser`. */
+type UserWithRelations = Awaited<ReturnType<typeof findUserByUsername>>
+
 export async function getProfile(username: string, viewerId?: string): Promise<PublicUser> {
   const user = await findUserByUsername(username)
   const context = await buildViewerContext(viewerId, { userIds: [user.id] })
@@ -143,38 +146,52 @@ export async function getFollowList(args: {
   const user = await findUserByUsername(args.username)
   const cursor = parseKeysetCursor(args.cursor)
 
-  const rows = await prisma.follow.findMany({
-    where: {
-      ...(args.kind === "followers" ? { followingId: user.id } : { followerId: user.id }),
-      ...(cursor
-        ? {
-            OR: [
-              { createdAt: { lt: new Date(cursor.createdAt) } },
-              { createdAt: new Date(cursor.createdAt), id: { lt: cursor.id } },
-            ],
-          }
-        : {}),
-    },
-    include:
-      args.kind === "followers"
-        ? { follower: { include: userInclude } }
-        : { following: { include: userInclude } },
-    orderBy: [{ createdAt: "desc" }, { id: "desc" }],
-    take: args.limit + 1,
-  })
+  const keyset = cursor
+    ? {
+        OR: [
+          { createdAt: { lt: new Date(cursor.createdAt) } },
+          { createdAt: new Date(cursor.createdAt), id: { lt: cursor.id } },
+        ],
+      }
+    : {}
 
-  const page = buildPage(rows, args.limit)
-  const users = page.items.map((row) =>
-    args.kind === "followers"
-      ? (row as { follower: Awaited<ReturnType<typeof findUserByUsername>> }).follower
-      : (row as { following: Awaited<ReturnType<typeof findUserByUsername>> }).following,
-  )
+  // Both branches are written out in full: Prisma derives the row payload from
+  // the literal `include`, so a conditional include would erase the relation
+  // types and force an unsafe cast.
+  let users: UserWithRelations[] = []
+  let nextCursor: string | null = null
+  let hasMore = false
+
+  if (args.kind === "followers") {
+    const rows = await prisma.follow.findMany({
+      where: { followingId: user.id, ...keyset },
+      include: { follower: { include: userInclude } },
+      orderBy: [{ createdAt: "desc" }, { id: "desc" }],
+      take: args.limit + 1,
+    })
+    const built = buildPage(rows, args.limit)
+    users = built.items.map((row) => row.follower)
+    nextCursor = built.nextCursor
+    hasMore = built.hasMore
+  } else {
+    const rows = await prisma.follow.findMany({
+      where: { followerId: user.id, ...keyset },
+      include: { following: { include: userInclude } },
+      orderBy: [{ createdAt: "desc" }, { id: "desc" }],
+      take: args.limit + 1,
+    })
+    const built = buildPage(rows, args.limit)
+    users = built.items.map((row) => row.following)
+    nextCursor = built.nextCursor
+    hasMore = built.hasMore
+  }
+
   const context = await buildViewerContext(args.viewerId, { userIds: users.map((item) => item.id) })
 
   return {
     items: users.map((item) => toPublicUser(item, context)),
-    nextCursor: page.nextCursor,
-    hasMore: page.hasMore,
+    nextCursor,
+    hasMore,
   }
 }
 
