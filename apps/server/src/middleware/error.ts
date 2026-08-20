@@ -7,6 +7,12 @@ import { env } from "../config/env"
 import { HttpError, isZodError } from "../lib/errors"
 import { logger } from "../lib/logger"
 
+// P2021 = table does not exist, P2022 = column does not exist. The database is
+// missing something the generated client expects, which means migrations were
+// not applied to this environment. That is a deployment fault rather than a bad
+// request, so it has to surface as 5xx and be logged with logger.error.
+const SCHEMA_MISMATCH_CODES = new Set(["P2021", "P2022"])
+
 export function notFoundHandler(req: Request, res: Response): void {
   res.status(404).json({
     error: {
@@ -51,6 +57,10 @@ export function errorHandler(error: unknown, req: Request, res: Response, _next:
       status = 404
       code = ERROR_CODES.NOT_FOUND
       message = "Not found"
+    } else if (SCHEMA_MISMATCH_CODES.has(error.code)) {
+      status = 500
+      code = ERROR_CODES.INTERNAL_ERROR
+      message = "Something went wrong on our side"
     } else {
       status = 400
       code = ERROR_CODES.VALIDATION_ERROR
