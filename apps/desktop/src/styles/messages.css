@@ -1,0 +1,292 @@
+/* Direct messages. Loaded after global.css and shell.css. */
+
+/* ------------------------------------------------------------------ inbox */
+.dm-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  width: 100%;
+  padding: 12px 18px;
+  text-align: left;
+  border-bottom: 1px solid var(--border);
+  transition: background var(--transition);
+}
+
+.dm-row:hover {
+  background: var(--bg-hover);
+}
+
+.dm-row[data-unread="true"] {
+  background: var(--accent-soft);
+}
+
+.dm-row[data-unread="true"]:hover {
+  background: color-mix(in srgb, var(--accent-soft) 70%, var(--bg-hover));
+}
+
+.dm-row__body {
+  min-width: 0;
+  flex: 1;
+}
+
+.dm-row__top {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  min-width: 0;
+}
+
+.dm-row__name {
+  font-weight: 650;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.dm-row__time {
+  margin-left: auto;
+  color: var(--text-faint);
+  font-size: 13px;
+  white-space: nowrap;
+}
+
+.dm-row__preview {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 2px;
+  color: var(--text-muted);
+  font-size: 14px;
+}
+
+.dm-row__preview span {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.dm-row[data-unread="true"] .dm-row__preview {
+  color: var(--text);
+  font-weight: 600;
+}
+
+.dm-badge {
+  flex: none;
+  min-width: 20px;
+  padding: 1px 7px;
+  border-radius: var(--radius-full);
+  background: var(--accent);
+  color: #fff;
+  font-size: 11px;
+  font-weight: 700;
+  text-align: center;
+}
+
+/* ----------------------------------------------------------------- thread */
+.dm-thread {
+  display: flex;
+  flex: 1 1 0;
+  flex-direction: column;
+  gap: 3px;
+  min-height: 0;
+  padding: 18px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-gutter: stable;
+}
+
+/* Keeps a short conversation pinned to the bottom, like every chat app. */
+.dm-thread__spacer {
+  margin-top: auto;
+}
+
+.dm-day {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 14px 0 10px;
+  color: var(--text-faint);
+  font-size: 12px;
+  font-weight: 650;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.dm-day::before,
+.dm-day::after {
+  content: "";
+  flex: 1;
+  height: 1px;
+  background: var(--border);
+}
+
+.dm-message {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  max-width: min(560px, 78%);
+}
+
+.dm-message[data-mine="true"] {
+  align-self: flex-end;
+  align-items: flex-end;
+}
+
+/* Consecutive messages from the same person read as one block. */
+.dm-message[data-grouped="true"] {
+  margin-top: 0;
+}
+
+.dm-message:not([data-grouped="true"]) {
+  margin-top: 10px;
+}
+
+.dm-bubble {
+  padding: 9px 13px;
+  border: 1px solid var(--border);
+  border-radius: 16px 16px 16px 5px;
+  background: var(--bg-subtle);
+  color: var(--text);
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  box-shadow: var(--shadow-sm);
+}
+
+.dm-message[data-mine="true"] .dm-bubble {
+  border-color: transparent;
+  border-radius: 16px 16px 5px 16px;
+  background: linear-gradient(135deg, #7c5cff, #5b4bf0);
+  color: #fff;
+}
+
+.dm-bubble[data-deleted="true"] {
+  border-style: dashed;
+  background: transparent;
+  color: var(--text-faint);
+  font-style: italic;
+  box-shadow: none;
+}
+
+.dm-message[data-mine="true"] .dm-bubble[data-deleted="true"] {
+  border-color: var(--border-strong);
+  background: transparent;
+  color: var(--text-faint);
+}
+
+.dm-message__meta {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  margin: 3px 4px 0;
+  color: var(--text-faint);
+  font-size: 11.5px;
+  opacity: 0;
+  transition: opacity var(--transition);
+}
+
+.dm-message:hover .dm-message__meta,
+.dm-message__meta[data-always="true"] {
+  opacity: 1;
+}
+
+.dm-message__delete {
+  color: var(--text-faint);
+}
+
+.dm-message__delete:hover {
+  color: #ef4444;
+}
+
+/* --------------------------------------------------------------- composer */
+.dm-composer {
+  display: flex;
+  flex: none;
+  align-items: flex-end;
+  gap: 10px;
+  padding: 12px 18px 16px;
+  border-top: 1px solid var(--border);
+  background: var(--bg-elevated);
+}
+
+.dm-composer__input {
+  flex: 1;
+  min-height: 44px;
+  max-height: 168px;
+  padding: 11px 14px;
+  border: 1px solid var(--border-strong);
+  border-radius: 22px;
+  background: var(--bg);
+  color: var(--text);
+  font: inherit;
+  line-height: 1.45;
+  resize: none;
+  transition: border-color var(--transition), box-shadow var(--transition);
+}
+
+.dm-composer__input:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-soft);
+}
+
+.dm-composer__counter {
+  align-self: center;
+  color: var(--text-faint);
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+}
+
+.dm-composer__counter[data-warn="true"] {
+  color: var(--bookmark);
+}
+
+.dm-composer__counter[data-over="true"] {
+  color: #ef4444;
+  font-weight: 700;
+}
+
+.dm-send {
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 44px;
+  height: 44px;
+  border-radius: var(--radius-full);
+  background: var(--accent);
+  color: #fff;
+  box-shadow: 0 6px 16px rgba(109, 94, 252, 0.3);
+  transition: background var(--transition), transform var(--transition), opacity var(--transition);
+}
+
+.dm-send:hover:not([disabled]) {
+  background: var(--accent-hover);
+}
+
+.dm-send:active:not([disabled]) {
+  transform: scale(0.94);
+}
+
+.dm-send[disabled] {
+  opacity: 0.45;
+  cursor: not-allowed;
+  box-shadow: none;
+}
+
+/* Shown when the server refuses a message because of a spam limit. */
+.dm-notice {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  margin: 0 18px 10px;
+  padding: 10px 12px;
+  border: 1px solid rgba(245, 158, 11, 0.4);
+  border-radius: var(--radius-md);
+  background: rgba(245, 158, 11, 0.12);
+  color: var(--text);
+  font-size: 13.5px;
+}
+
+.dm-notice .icon {
+  color: var(--bookmark);
+  margin-top: 1px;
+}

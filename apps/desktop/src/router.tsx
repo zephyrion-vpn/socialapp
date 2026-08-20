@@ -5,6 +5,8 @@ export type Route =
   | { name: "explore" }
   | { name: "notifications" }
   | { name: "bookmarks" }
+  | { name: "messages" }
+  | { name: "conversation"; id: string }
   | { name: "settings" }
   | { name: "search"; query: string }
   | { name: "profile"; username: string; tab: "posts" | "replies" | "media" | "likes" }
@@ -25,6 +27,8 @@ export function matchRoute(path: string): Route {
       return { name: "notifications" }
     case "bookmarks":
       return { name: "bookmarks" }
+    case "messages":
+      return segments[1] ? { name: "conversation", id: segments[1] } : { name: "messages" }
     case "settings":
       return { name: "settings" }
     case "search":
@@ -97,6 +101,8 @@ export const routes = {
   explore: () => "/explore",
   notifications: () => "/notifications",
   bookmarks: () => "/bookmarks",
+  messages: () => "/messages",
+  conversation: (id: string) => `/messages/${id}`,
   settings: () => "/settings",
   search: (query: string) => `/search?q=${encodeURIComponent(query)}`,
   profile: (username: string, tab?: "posts" | "replies" | "media" | "likes") =>

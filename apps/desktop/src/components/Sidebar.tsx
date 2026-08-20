@@ -1,47 +1,87 @@
 import { Avatar } from "@/components/Avatar"
+import { Icon, type IconName } from "@/components/Icon"
 import { routes, useRouter } from "@/router"
 import { useSession } from "@/store/session"
 
 interface Props {
   unread: number
+  unreadMessages?: number
   onCompose: () => void
 }
 
-const NAV = [
-  { icon: "\uD83C\uDFE0", label: "Home", path: routes.home(), match: "home" },
-  { icon: "\uD83D\uDD0D", label: "Explore", path: routes.explore(), match: "explore" },
-  { icon: "\uD83D\uDD14", label: "Notifications", path: routes.notifications(), match: "notifications" },
-  { icon: "\uD83D\uDD16", label: "Bookmarks", path: routes.bookmarks(), match: "bookmarks" },
-] as const
+interface NavItem {
+  icon: IconName
+  /** Used while the item is selected - solid variants read better as active. */
+  activeIcon?: IconName
+  label: string
+  path: string
+  match: string
+}
 
-export function Sidebar({ unread, onCompose }: Props) {
+const NAV: NavItem[] = [
+  { icon: "home", label: "Home", path: routes.home(), match: "home" },
+  { icon: "compass", label: "Explore", path: routes.explore(), match: "explore" },
+  { icon: "bell", label: "Notifications", path: routes.notifications(), match: "notifications" },
+  { icon: "message-circle", label: "Messages", path: routes.messages(), match: "messages" },
+  {
+    icon: "bookmark",
+    activeIcon: "bookmark-filled",
+    label: "Bookmarks",
+    path: routes.bookmarks(),
+    match: "bookmarks",
+  },
+]
+
+export function Sidebar({ unread, unreadMessages = 0, onCompose }: Props) {
   const { route, navigate } = useRouter()
   const { user, logout } = useSession()
+
+  // A thread is still "Messages" as far as the sidebar is concerned.
+  const isActive = (match: string): boolean =>
+    route.name === match || (match === "messages" && route.name === "conversation")
+
+  const badgeFor = (match: string): number => {
+    if (match === "notifications") return unread
+    if (match === "messages") return unreadMessages
+    return 0
+  }
 
   return (
     <aside className="sidebar">
       <div className="sidebar__brand">
-        <span className="sidebar__logo">{"\uD83D\uDCAC"}</span>
+        <span className="sidebar__logo">
+          <Icon name="logo" size={20} />
+        </span>
         <span className="sidebar__brand-text">SocialApp</span>
       </div>
 
       <nav className="sidebar__nav">
-        {NAV.map((item) => (
-          <button
-            key={item.match}
-            type="button"
-            className="sidebar__item"
-            data-active={route.name === item.match}
-            title={item.label}
-            onClick={() => navigate(item.path)}
-          >
-            <span className="sidebar__icon">{item.icon}</span>
-            <span className="sidebar__label">{item.label}</span>
-            {item.match === "notifications" && unread > 0 ? (
-              <span className="sidebar__badge">{unread > 99 ? "99+" : unread}</span>
-            ) : null}
-          </button>
-        ))}
+        {NAV.map((item) => {
+          const active = isActive(item.match)
+          const badge = badgeFor(item.match)
+          return (
+            <button
+              key={item.match}
+              type="button"
+              className="sidebar__item"
+              data-active={active}
+              title={item.label}
+              onClick={() => navigate(item.path)}
+            >
+              <span className="sidebar__icon">
+                <Icon
+                  name={active && item.activeIcon ? item.activeIcon : item.icon}
+                  size={21}
+                  strokeWidth={active ? 2.1 : 1.75}
+                />
+              </span>
+              <span className="sidebar__label">{item.label}</span>
+              {badge > 0 ? (
+                <span className="sidebar__badge">{badge > 99 ? "99+" : badge}</span>
+              ) : null}
+            </button>
+          )
+        })}
 
         <button
           type="button"
@@ -50,7 +90,15 @@ export function Sidebar({ unread, onCompose }: Props) {
           title="Profile"
           onClick={() => user && navigate(routes.profile(user.username))}
         >
-          <span className="sidebar__icon">{"\uD83D\uDC64"}</span>
+          <span className="sidebar__icon">
+            <Icon
+              name="user"
+              size={21}
+              strokeWidth={
+                route.name === "profile" && route.username === user?.username ? 2.1 : 1.75
+              }
+            />
+          </span>
           <span className="sidebar__label">Profile</span>
         </button>
 
@@ -61,13 +109,16 @@ export function Sidebar({ unread, onCompose }: Props) {
           title="Settings"
           onClick={() => navigate(routes.settings())}
         >
-          <span className="sidebar__icon">{"\u2699\uFE0F"}</span>
+          <span className="sidebar__icon">
+            <Icon name="settings" size={21} strokeWidth={route.name === "settings" ? 2.1 : 1.75} />
+          </span>
           <span className="sidebar__label">Settings</span>
         </button>
       </nav>
 
       <button type="button" className="sidebar__compose" onClick={onCompose} title="New post (N)">
-        {"\u270E"} <span>New post</span>
+        <Icon name="pen" size={18} />
+        <span>New post</span>
       </button>
 
       {user ? (
@@ -83,7 +134,7 @@ export function Sidebar({ unread, onCompose }: Props) {
             title="Log out"
             onClick={() => void logout()}
           >
-            {"\u23CF"}
+            <Icon name="log-out" size={18} label="Log out" />
           </button>
         </div>
       ) : null}

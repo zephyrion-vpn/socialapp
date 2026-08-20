@@ -2,6 +2,7 @@ import { formatCount, type PublicUser, type Trend } from "@socialapp/shared"
 import { useState } from "react"
 
 import { api } from "@/api/client"
+import { Icon } from "@/components/Icon"
 import { UserRowSkeleton } from "@/components/Skeletons"
 import { UserRow } from "@/components/UserRow"
 import { useAsync } from "@/hooks/useAsync"
@@ -23,7 +24,7 @@ export function RightRail() {
           if (query.trim()) navigate(routes.search(query.trim()))
         }}
       >
-        <span>{"\uD83D\uDD0D"}</span>
+        <Icon name="search" size={17} />
         <input
           value={query}
           placeholder="Search SocialApp"

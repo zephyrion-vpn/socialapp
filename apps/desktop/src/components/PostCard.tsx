@@ -3,6 +3,7 @@ import { useState } from "react"
 
 import { api } from "@/api/client"
 import { Avatar } from "@/components/Avatar"
+import { Icon } from "@/components/Icon"
 import { MediaGrid } from "@/components/MediaGrid"
 import { RichText } from "@/components/RichText"
 import { routes, useRouter } from "@/router"
@@ -169,7 +170,7 @@ export function PostCard({ post, onChange, onDeleted, variant = "feed" }: Props)
                 void remove()
               }}
             >
-              {"\u2026"}
+              <Icon name="trash" size={16} label="Delete post" />
             </button>
           ) : null}
         </div>
@@ -210,7 +211,7 @@ export function PostCard({ post, onChange, onDeleted, variant = "feed" }: Props)
               openPost()
             }}
           >
-            {"\uD83D\uDCAC"}
+            <Icon name="reply" size={17} />
             <span>{post.replyCount > 0 ? formatCount(post.replyCount) : ""}</span>
           </button>
 
@@ -225,7 +226,7 @@ export function PostCard({ post, onChange, onDeleted, variant = "feed" }: Props)
               void toggleRepost()
             }}
           >
-            {"\uD83D\uDD01"}
+            <Icon name="repeat" size={17} strokeWidth={post.reposted ? 2.1 : 1.75} />
             <span>{post.repostCount > 0 ? formatCount(post.repostCount) : ""}</span>
           </button>
 
@@ -240,7 +241,7 @@ export function PostCard({ post, onChange, onDeleted, variant = "feed" }: Props)
               void toggleLike()
             }}
           >
-            {post.liked ? "\u2764\uFE0F" : "\u2661"}
+            <Icon name={post.liked ? "heart-filled" : "heart"} size={17} />
             <span>{post.likeCount > 0 ? formatCount(post.likeCount) : ""}</span>
           </button>
 
@@ -255,7 +256,7 @@ export function PostCard({ post, onChange, onDeleted, variant = "feed" }: Props)
               void toggleBookmark()
             }}
           >
-            {post.bookmarked ? "\uD83D\uDD16" : "\u2606"}
+            <Icon name={post.bookmarked ? "bookmark-filled" : "bookmark"} size={17} />
           </button>
 
           {variant === "detail" && post.viewCount > 0 ? (

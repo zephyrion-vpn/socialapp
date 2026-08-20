@@ -1,4 +1,5 @@
 import { currentApiBaseUrl } from "@/api/client"
+import { Icon } from "@/components/Icon"
 import { useUi } from "@/store/ui"
 
 export function OfflineBanner() {
@@ -7,7 +8,7 @@ export function OfflineBanner() {
 
   return (
     <div className="banner" data-tone="warn">
-      <span>{"\u26A0\uFE0F"}</span>
+      <Icon name="alert-triangle" size={17} />
       <span className="grow">
         You are offline. SocialApp will reconnect to {currentApiBaseUrl()} automatically.
       </span>
@@ -21,7 +22,7 @@ export function UpdateBanner() {
   if (updateStatus.state === "available") {
     return (
       <div className="banner" data-tone="accent">
-        <span>{"\u2B06\uFE0F"}</span>
+        <Icon name="arrow-up-circle" size={17} />
         <span className="grow">
           Version {updateStatus.version} is available.
         </span>
@@ -40,6 +41,7 @@ export function UpdateBanner() {
   if (updateStatus.state === "downloading") {
     return (
       <div className="banner" data-tone="accent">
+        <Icon name="arrow-up-circle" size={17} />
         <span className="grow">{`Downloading update\u2026 ${updateStatus.percent ?? 0}%`}</span>
       </div>
     )
@@ -48,6 +50,7 @@ export function UpdateBanner() {
   if (updateStatus.state === "downloaded") {
     return (
       <div className="banner" data-tone="accent">
+        <Icon name="check" size={17} />
         <span className="grow">Update ready. Restart to install it.</span>
         <button
           type="button"
