@@ -11,11 +11,10 @@ import { useAsync } from "@/hooks/useAsync"
 import { usePaginated } from "@/hooks/usePaginated"
 import { routes, useRouter } from "@/router"
 
-interface ThreadResponse {
-  ancestors: Post[]
-  post: Post
-  replies: { items: Post[]; nextCursor?: string; hasMore: boolean }
-}
+// Derived from the client rather than hand-written: the local copy declared
+// `replies.nextCursor?: string` while the API contract (shared Page<T>) is
+// `string | null`, which is exactly how the two drifted apart.
+type ThreadResponse = Awaited<ReturnType<typeof api.posts.thread>>
 
 export function PostRoute({ id }: { id: string }) {
   const { navigate } = useRouter()
