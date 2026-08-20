@@ -53,6 +53,21 @@ export const writeLimiter = rateLimit({
   keyGenerator: (req: Request) => req.auth?.userId ?? ipKey(req),
 })
 
+/**
+ * Coarse network guard for direct messages. It only exists to keep obvious
+ * abuse away from the database - the limits that actually shape messaging
+ * behaviour (per conversation token buckets, unanswered thread caps, cold
+ * outreach quotas) live in services/message.service.ts, because they need to
+ * tell a real conversation apart from a flood.
+ */
+export const dmLimiter = rateLimit({
+  ...shared,
+  windowMs: 5 * 60_000,
+  limit: 240,
+  skip: () => env.isTest,
+  keyGenerator: (req: Request) => req.auth?.userId ?? ipKey(req),
+})
+
 /** Uploads are the most expensive operation - keep them tight. */
 export const uploadLimiter = rateLimit({
   ...shared,

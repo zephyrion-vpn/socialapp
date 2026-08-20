@@ -1,5 +1,12 @@
 import { Prisma } from "@prisma/client"
-import type { MediaAttachment, NotificationItem, Post, PublicUser } from "@socialapp/shared"
+import type {
+  Conversation,
+  DirectMessage,
+  MediaAttachment,
+  NotificationItem,
+  Post,
+  PublicUser,
+} from "@socialapp/shared"
 
 import { prisma } from "./lib/prisma"
 
@@ -24,10 +31,24 @@ export const notificationInclude = {
   post: { include: postInclude },
 } satisfies Prisma.NotificationInclude
 
+export const conversationInclude = {
+  participants: { include: { user: { include: { profile: true } } } },
+} satisfies Prisma.ConversationInclude
+
+export const directMessageInclude = {
+  sender: { include: { profile: true } },
+} satisfies Prisma.DirectMessageInclude
+
 export type UserWithProfile = Prisma.UserGetPayload<{ include: typeof userInclude }>
 export type PostWithRelations = Prisma.PostGetPayload<{ include: typeof postInclude }>
 export type NotificationWithRelations = Prisma.NotificationGetPayload<{
   include: typeof notificationInclude
+}>
+export type ConversationWithRelations = Prisma.ConversationGetPayload<{
+  include: typeof conversationInclude
+}>
+export type DirectMessageWithRelations = Prisma.DirectMessageGetPayload<{
+  include: typeof directMessageInclude
 }>
 
 /**
@@ -245,5 +266,51 @@ export function toNotification(
     isRead: notification.isRead,
     actor: notification.actor ? toPublicUser(notification.actor, context) : null,
     post: notification.post ? toPost(notification.post, context) : null,
+  }
+}
+
+/**
+ * A conversation is always rendered from one side: `participant` is the other
+ * person, and the unread counter/mute flag come from the viewer's own row.
+ */
+export function toConversation(
+  conversation: ConversationWithRelations,
+  viewerId: string,
+  context?: ViewerContext,
+): Conversation {
+  const ctx = context ?? emptyViewerContext(viewerId)
+  const mine = conversation.participants.find((row) => row.userId === viewerId)
+  const other = conversation.participants.find((row) => row.userId !== viewerId) ?? mine
+
+  if (!other) throw new Error(`Conversation ${conversation.id} has no participants`)
+
+  return {
+    id: conversation.id,
+    participant: toPublicUser(other.user, ctx),
+    lastMessageAt: conversation.lastMessageAt ? conversation.lastMessageAt.toISOString() : null,
+    lastMessagePreview: conversation.lastMessagePreview,
+    lastMessageFromMe: conversation.lastMessageSenderId === viewerId,
+    messageCount: conversation.messageCount,
+    unreadCount: mine?.unreadCount ?? 0,
+    isMuted: mine?.isMuted ?? false,
+    createdAt: conversation.createdAt.toISOString(),
+  }
+}
+
+export function toDirectMessage(
+  message: DirectMessageWithRelations,
+  viewerId: string,
+  context?: ViewerContext,
+): DirectMessage {
+  const ctx = context ?? emptyViewerContext(viewerId)
+  return {
+    id: message.id,
+    conversationId: message.conversationId,
+    content: message.isDeleted ? "" : message.content,
+    createdAt: message.createdAt.toISOString(),
+    isMine: message.senderId === viewerId,
+    isDeleted: message.isDeleted,
+    readAt: message.readAt ? message.readAt.toISOString() : null,
+    sender: toPublicUser(message.sender, ctx),
   }
 }

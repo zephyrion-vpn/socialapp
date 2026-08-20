@@ -45,19 +45,21 @@ model User {
   updatedAt    DateTime  @updatedAt
 
   profile               Profile?
-  posts                 Post[]               @relation("PostAuthor")
+  posts                 Post[]                    @relation("PostAuthor")
   likes                 Like[]
   reposts               Repost[]
   bookmarks             Bookmark[]
-  replyEdges            Reply[]              @relation("ReplyAuthor")
-  following             Follow[]             @relation("FollowFollower")
-  followers             Follow[]             @relation("FollowFollowing")
-  notificationsReceived Notification[]       @relation("NotificationRecipient")
-  notificationsSent     Notification[]       @relation("NotificationActor")
-  blocksMade            Block[]              @relation("BlockBlocker")
-  blocksReceived        Block[]              @relation("BlockBlocked")
-  mutesMade             Mute[]               @relation("MuteMuter")
-  mutesReceived         Mute[]               @relation("MuteMuted")
+  replyEdges            Reply[]                   @relation("ReplyAuthor")
+  following             Follow[]                  @relation("FollowFollower")
+  followers             Follow[]                  @relation("FollowFollowing")
+  notificationsReceived Notification[]            @relation("NotificationRecipient")
+  notificationsSent     Notification[]            @relation("NotificationActor")
+  blocksMade            Block[]                   @relation("BlockBlocker")
+  blocksReceived        Block[]                   @relation("BlockBlocked")
+  mutesMade             Mute[]                    @relation("MuteMuter")
+  mutesReceived         Mute[]                    @relation("MuteMuted")
+  conversations         ConversationParticipant[]
+  directMessages        DirectMessage[]           @relation("DirectMessageSender")
   sessions              Session[]
   passwordResetTokens   PasswordResetToken[]
 
@@ -241,6 +243,59 @@ model Notification {
   @@index([recipientId, isRead])
   @@index([actorId])
   @@index([postId])
+}
+
+/// One to one direct message thread.
+///
+/// `pairKey` is the two participant ids sorted and joined, so the unique index
+/// makes a duplicate thread between the same two people impossible even under
+/// concurrent "start conversation" requests.
+model Conversation {
+  id                  String    @id @default(uuid()) @db.Uuid
+  pairKey             String    @unique @db.VarChar(80)
+  lastMessageAt       DateTime?
+  lastMessagePreview  String?   @db.VarChar(160)
+  lastMessageSenderId String?   @db.Uuid
+  messageCount        Int       @default(0)
+  createdAt           DateTime  @default(now())
+  updatedAt           DateTime  @updatedAt
+
+  participants ConversationParticipant[]
+  messages     DirectMessage[]
+
+  @@index([lastMessageAt(sort: Desc)])
+}
+
+/// Per side state of a conversation (unread counter, mute, archive).
+model ConversationParticipant {
+  id             String       @id @default(uuid()) @db.Uuid
+  conversationId String       @db.Uuid
+  conversation   Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  userId         String       @db.Uuid
+  user           User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  unreadCount    Int          @default(0)
+  lastReadAt     DateTime?
+  isMuted        Boolean      @default(false)
+  isArchived     Boolean      @default(false)
+  createdAt      DateTime     @default(now())
+
+  @@unique([conversationId, userId])
+  @@index([userId, isArchived])
+}
+
+model DirectMessage {
+  id             String       @id @default(uuid()) @db.Uuid
+  conversationId String       @db.Uuid
+  conversation   Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  senderId       String       @db.Uuid
+  sender         User         @relation("DirectMessageSender", fields: [senderId], references: [id], onDelete: Cascade)
+  content        String       @db.VarChar(2000)
+  isDeleted      Boolean      @default(false)
+  readAt         DateTime?
+  createdAt      DateTime     @default(now())
+
+  @@index([conversationId, createdAt(sort: Desc)])
+  @@index([senderId, createdAt(sort: Desc)])
 }
 
 model Hashtag {
