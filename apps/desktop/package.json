@@ -1,0 +1,42 @@
+{
+  "name": "@socialapp/desktop",
+  "version": "1.0.0",
+  "private": true,
+  "description": "SocialApp desktop client for Windows - a Threads/X style social network",
+  "author": {
+    "name": "SocialApp",
+    "email": "support@socialapp.example"
+  },
+  "homepage": "https://github.com/zephyrion-vpn/socialapp",
+  "license": "MIT",
+  "main": "dist-electron/main.js",
+  "scripts": {
+    "dev": "node scripts/dev.mjs",
+    "icon": "node scripts/generate-icon.mjs",
+    "build:main": "node scripts/build-main.mjs",
+    "build:renderer": "vite build",
+    "build": "node scripts/generate-icon.mjs && node scripts/build-main.mjs && vite build",
+    "pack:dir": "electron-builder --dir --config electron-builder.yml",
+    "pack:win": "electron-builder --win --config electron-builder.yml --publish never",
+    "package:win": "npm run build && npm run pack:win",
+    "typecheck": "tsc -p tsconfig.electron.json --noEmit && tsc -p tsconfig.json --noEmit",
+    "clean": "node -e \"const {rmSync}=require('fs');for(const d of ['dist','dist-electron','release'])rmSync(d,{recursive:true,force:true})\""
+  },
+  "dependencies": {
+    "electron-updater": "6.3.9"
+  },
+  "devDependencies": {
+    "@socialapp/api-client": "*",
+    "@socialapp/shared": "*",
+    "@types/react": "18.3.12",
+    "@types/react-dom": "18.3.1",
+    "@vitejs/plugin-react": "4.3.4",
+    "electron": "33.2.1",
+    "electron-builder": "25.1.8",
+    "esbuild": "0.24.2",
+    "react": "18.3.1",
+    "react-dom": "18.3.1",
+    "typescript": "5.6.3",
+    "vite": "5.4.11"
+  }
+}

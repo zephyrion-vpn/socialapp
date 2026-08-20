@@ -1,0 +1,62 @@
+# electron-builder configuration - produces a real installable Windows .exe.
+appId: com.socialapp.desktop
+productName: SocialApp
+copyright: Copyright (c) 2026 SocialApp
+
+directories:
+  output: release
+  buildResources: build
+
+# Only the bundled output ships: the renderer (Vite) and main/preload (esbuild).
+files:
+  - dist/**/*
+  - dist-electron/**/*
+  - build/icon.ico
+  - package.json
+  - "!**/*.map"
+
+asar: true
+npmRebuild: false
+buildDependenciesFromSource: false
+
+win:
+  icon: build/icon.ico
+  # Metadata shown in Explorer / Task Manager / Add-remove programs.
+  legalTrademarks: SocialApp
+  requestedExecutionLevel: asInvoker
+  target:
+    - target: nsis
+      arch:
+        - x64
+    - target: portable
+      arch:
+        - x64
+
+nsis:
+  artifactName: ${productName}-Setup-${version}.${ext}
+  # A classic wizard installer, not a silent one-click.
+  oneClick: false
+  perMachine: false
+  allowElevation: true
+  allowToChangeInstallationDirectory: true
+  createDesktopShortcut: always
+  createStartMenuShortcut: true
+  shortcutName: SocialApp
+  uninstallDisplayName: SocialApp ${version}
+  displayLanguageSelector: false
+  deleteAppDataOnUninstall: false
+  installerIcon: build/icon.ico
+  uninstallerIcon: build/icon.ico
+  installerHeaderIcon: build/icon.ico
+
+portable:
+  artifactName: ${productName}-Portable-${version}.${ext}
+  requestExecutionLevel: user
+  unpackDirName: SocialApp
+
+# Update feed for electron-updater: GitHub Release -> new exe -> desktop update.
+publish:
+  provider: github
+  owner: zephyrion-vpn
+  repo: socialapp
+  releaseType: release
